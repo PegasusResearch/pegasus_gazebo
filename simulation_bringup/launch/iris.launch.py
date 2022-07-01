@@ -66,7 +66,7 @@ def generate_launch_description():
         cmd=[
             'gz', 'model',
             '--spawn-file', model,
-            '--model-name', 'drone_' + str(vehicle_id),
+            '--model-name', 'drone' + str(vehicle_id),
             '-x', LaunchConfiguration('x'),
             '-y', LaunchConfiguration('y'),
             '-z', LaunchConfiguration('z'),
@@ -93,7 +93,7 @@ def generate_launch_description():
     # Launch the pegasus control and navigation code stack
     pegasus_launch = IncludeLaunchDescription(
         # Grab the launch file for the mavlink interface
-        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('pegasus_bringup'), 'launch/iris_sim.launch.py')),
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('pegasus_bringup'), 'launch/simulation/iris.launch.py')),
         # Define costume launch arguments/parameters used for the mavlink interface
         launch_arguments={
             'id': str(vehicle_id), 
