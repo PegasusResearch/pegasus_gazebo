@@ -1,151 +1,163 @@
 #!/usr/bin/env python3
 import os
-import subprocess
-
-from ament_index_python.packages import get_package_share_directory
+import sys
 from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable, RegisterEventHandler, LogInfo, IncludeLaunchDescription, TimerAction
+from launch.event_handlers import OnProcessExit, OnProcessStart
+from launch.substitutions import LocalSubstitution
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+
 
 def generate_launch_description():
+    """Launch Gazebo with a drone running PX4 communicating over ROS 2."""
     
-    # ---------------------------
-    # Setup environment variables
-    # ---------------------------
+    # --------------------------------
+    # PX4 and Gazebo model directories
+    # --------------------------------
     
-    # Get the PX4 install directory
-    px4_dir = os.environ['PX4_DIR']
-    px4_run_dir = os.environ['HOME'] + '/tmp/px4_run_dir'
+    # Get the home and px4 directories and define where temporary files are placed
+    PX4_DIR = os.environ.get('PX4_DIR')
+    PX4_RUN_DIR = os.environ.get('HOME') + '/tmp/px4_run_dir'
+    os.makedirs(PX4_RUN_DIR, exist_ok=True)
+
+    # Get the PX4-gazebo directory
+    px4_gazebo_dir = os.path.join(PX4_DIR, 'Tools/sitl_gazebo')
     
-    # Set the Environment variables to use the PX4 modules as a part of ROS2
-    SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', px4_dir + '/build/px4_sitl_default/build_gazebo'),
-    SetEnvironmentVariable('GAZEBO_MODEL_PATH', px4_dir + '/Tools/sitl_gazebo/models'),
-    SetEnvironmentVariable('PX4_SIM_MODEL', 'blackdrone_gimbal')
+    # Get the standard iris drone models inside the PX4 package
+    model = os.path.join(px4_gazebo_dir, 'models', 'iris', 'iris.sdf')
     
-    # Define a PX4 running directory for temporary files
-    os.makedirs(os.environ['HOME'] + '/tmp/px4_run_dir', exist_ok=True)
+    # --------------------------------
+    # Define the vehicle ID
+    # --------------------------------
     
-    # -----------------------------------
-    # Setup the gazebo server and client
-    # -----------------------------------
+    # Set the default vehicle id (note: this is a trick due to the parameter reading limitation in ROS2)
+    default_vehicle_id = 1
+    vehicle_id = default_vehicle_id
+    for arg in sys.argv:
+        if arg.startswith('vehicle_id:='):
+            vehicle_id = int(arg.split(':=')[1])
+    port_increment = vehicle_id - 1
+            
+    # ---------------------------------------------------------------------
+    # Create the Processes that need to be launched to simulate the vehicle
+    # ---------------------------------------------------------------------
     
-    # 1. Get the location of the ros_gazebo package
-    gazebo_package_location = get_package_share_directory('gazebo_ros')
-    
-    # 2. Launch the gazebo server simulator with a specific world
-    gazebo_server = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([gazebo_package_location, '/launch/gzserver.launch.py']),
-        launch_arguments={
-            'world': 'worlds/empty.world', 
-            'verbose': 'true'}.items(),
+    # Generate the 3D model by replacing in the mavlink configuration parameters, according to the vehicle ID
+    model_generator_process = ExecuteProcess(
+        cmd=[
+            os.path.join(px4_gazebo_dir, 'scripts/jinja_gen.py'),
+            os.path.join(px4_gazebo_dir, 'models/iris/iris.sdf.jinja'),
+            px4_gazebo_dir,
+            '--mavlink_id=' + str(vehicle_id),
+            '--mavlink_udp_port=' + str(14540 + port_increment),
+            '--mavlink_tcp_port=' + str(4560 + port_increment),
+            '--gst_udp_port=' + str(5600 + port_increment),
+            '--video_uri=' + str(5600 + port_increment),
+            '--mavlink_cam_udp_port=' + str(14530 + port_increment),
+            '--output-file=' + os.path.join(px4_gazebo_dir, 'models/iris/iris.sdf'),
+        ],
+        output='screen',
     )
     
-    # 3. Launch the gazebo graphical client
-    gazebo_client = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([gazebo_package_location, '/launch/gzclient.launch.py'])
-    )
-    
-    mavlink_sitl_gazebo = os.path.join(px4_dir, 'Tools/sitl_gazebo')
-    
-    # 4. Generate the SDF vehicle model by replacing in the jinja file, the communication scheme for mavlink
-    sdf_model_generator = subprocess.run(
-        os.path.join(mavlink_sitl_gazebo, 'scripts/jinja_gen.py') +
-        ' --stdout --mavlink_id=1 --mavlink_udp_port=14560 --mavlink_tcp_port=4560 --gst_udp_port=5600 --video_uri=5600 --mavlink_cam_udp_port=14530 ' + 
-        ' --output-file=models/iris/iris.sdf ' +
-        os.path.join(mavlink_sitl_gazebo, 'models/iris/iris.sdf.jinja') + ' ' + mavlink_sitl_gazebo, 
-        stdout=subprocess.PIPE, 
-        stderr=subprocess.PIPE,
-        text=True,
-        shell=True)
-    print(sdf_model_generator.stderr)
-    
-    model = os.path.join(px4_dir, 'Tools', 'sitl_gazebo', 'models', 'iris', 'iris.sdf')
-    
-    # 5. Spawn the SDF gazebo model
-    spawn_gazebo_vehicle_node = ExecuteProcess(
+    # Spawn the 3D model in the gazebo world (it requires that a gzserver is already running)
+    spawn_3d_model = ExecuteProcess(
         cmd=[
             'gz', 'model',
             '--spawn-file', model,
-            '--model-name', 'drone',
-            '-x', '0.0',
-            '-y', '0.0',
-            '-z', '0.0',
-            '-R', '0.0',
-            '-P', '0.0',
-            '-Y', '0.0',
+            '--model-name', 'drone_' + str(vehicle_id),
+            '-x', LaunchConfiguration('x'),
+            '-y', LaunchConfiguration('y'),
+            '-z', LaunchConfiguration('z'),
+            '-R', LaunchConfiguration('R'),
+            '-P', LaunchConfiguration('P'),
+            '-Y', LaunchConfiguration('Y')
         ],
-        #prefix="bash -c 'sleep 30s; $0 $@'",
+        output='screen')
+            
+    # Launch PX4 simulator
+    px4_sitl_process = ExecuteProcess(
+        cmd=[
+            PX4_DIR + '/build/px4_sitl_default/bin/px4',
+            PX4_DIR + '/ROMFS/px4fmu_common/',
+            '-s',
+            PX4_DIR + '/ROMFS/px4fmu_common/init.d-posix/rcS',
+            '-i ' + str(port_increment)
+        ],
+        prefix='bash -c "$0 $@"',
+        cwd=PX4_RUN_DIR,
         output='screen'
     )
     
-    # "/Users/marcelojacinto/ros2/PX4-Autopilot/build/px4_sitl_default/bin/px4" "/Users/marcelojacinto/ros2/PX4-Autopilot/build/px4_sitl_default"/etc -s etc/init.d-posix/rcS -t "/Users/marcelojacinto/ros2/PX4-Autopilot"/test_data
-    
-    # 4. Launch the PX4
-    # px4_sitl_sim = ExecuteProcess(
-    #     cmd=[px4_dir + '/build/px4_sitl_default/bin/px4',
-    #          '-s init.d-posix/rcS',
-    #          ''],
-    #     cwd=px4_dir + '/build/px4_sitl_default/etc',
-    #     output='screen')
-    
-    # 
-    #
-    # ./px4 /Users/marcelojacinto/ros2/PX4-Autopilot/build/px4_sitl_default/etc -s etc/init.d-posix/rcS -i 0 -w sitl_iris_0 -d
-    
-    # ----------------------------------------
-    # ---- DECLARE THE LAUNCH ARGUMENTS ------
-    # ----------------------------------------
+    # Launch the pegasus control and navigation code stack
+    pegasus_launch = IncludeLaunchDescription(
+        # Grab the launch file for the mavlink interface
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('pegasus_bringup'), 'launch/iris_sim.launch.py')),
+        # Define costume launch arguments/parameters used for the mavlink interface
+        launch_arguments={
+            'id': str(vehicle_id), 
+            'namespace': 'drone',
+            'connection': 'udp://:' + str(14540 + port_increment)
+        }.items()
+    )
 
-    # Namespace and ID of the vehicle as parameter received by the launch file
-    id_arg = DeclareLaunchArgument('vehicle_id', default_value='0', description='Drone ID in the network')
-    namespace_arg = DeclareLaunchArgument('vehicle_ns', default_value='drone', description='Namespace to append to every topic and node name')
-    
-    mavlink_id_arg = DeclareLaunchArgument('mavlink_id', default_value='0', description='Mavlink ID of the vehicle')
-    
-    # Define the drone MAVLINK IP and PORT
-    mav_connection_arg = DeclareLaunchArgument('connection', default_value='udp://:14550', description='The interface used to connect to the vehicle')
-    # Other possible connection values
-    #connection: "udp://:15006"    # snapdragon 6
-    #connection: "udp://:15000"
-    #connection: "serial:///dev/ttyACM0:57600"
-    
-    # ----------------------------------------
-    # ---- DECLARE THE NODES TO LAUNCH -------
-    # ----------------------------------------
-    
-    # 1. Get the PX4 simulator install directory
-    
-    # mavlink_sitl_gazebo = os.path.join(px4_dir, 'Tools/sitl_gazebo')
-    
-    #sdf_model = sdf_model_generator.stdout
-    # print(sdf_model_generator.stdout)
-    
-    # 3. Start the PX4 SITL simulation (simulate the Pixhawk microcontroller running PX4)
-    # px4_sim = ExecuteProcess(
-    #     cmd=[
-    #         os.path.join(px4_dir, 'build/px4_sitl_default/bin/px4'),
-    #         os.path.join(px4_dir, 'build/px4_sitl_default/etc'),
-    #         '-s etc/init.d-posix/rcS -i',
-    #         LaunchConfiguration('vehicle_id'),
-    #         '-w sdf_iris1'],
-    #     output='screen',
-    #     emulate_tty=True
-    # )
-    
-    # print(px4_sim.output)
-    
-    # ----------------------------------------
-    # ---- RETURN THE LAUNCH DESCRIPTION -----
-    # ----------------------------------------
     return LaunchDescription([
-        # Launch arguments
-        id_arg, 
-        namespace_arg,
-        mavlink_id_arg,
-        # Launch files
-        gazebo_server,
-        gazebo_client,
-        spawn_gazebo_vehicle_node
-    ])
+        
+        # Define the environment variables so that gazebo can discover PX4 3D models and plugins
+        SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo'),
+        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models'),
+        SetEnvironmentVariable('PX4_SIM_MODEL', 'iris'),
+
+        # Define where to spawn the vehicle (in the inertial frame) 
+        # TODO - receive coordinates in ned perform the conversion to ENU and f.l.u here
+        # so that the user only needs to work in NED coordinates
+        DeclareLaunchArgument('vehicle_id', default_value=str(default_vehicle_id), description='Drone ID in the network'),
+        DeclareLaunchArgument('x', default_value='0.0', description='X position expressed in ENU'),
+        DeclareLaunchArgument('y', default_value='0.0', description='Y position expressed in ENU'),
+        DeclareLaunchArgument('z', default_value='0.0', description='Z position expressed in ENU'),
+        DeclareLaunchArgument('R', default_value='0.0', description='Roll orientation expressed in ENU'),
+        DeclareLaunchArgument('P', default_value='0.0', description='Pitch orientation expressed in ENU'),
+        DeclareLaunchArgument('Y', default_value='0.0', description='Yaw orientation expressed in ENU'),
+        
+        # Declare the generate_model_process
+        model_generator_process,
+        
+        # After the sdf model generator finishes, then launch the vehicle spawn in gazebo
+        RegisterEventHandler(
+            OnProcessExit(
+                target_action=model_generator_process,
+                on_exit=[
+                    LogInfo(msg='Vehicle SDF model generated'),
+                    spawn_3d_model
+                ]
+            )
+        ),
+        
+        # After the sdf model of the vehicle get's spawn on the vehicle, execute the PX4 simulator
+        RegisterEventHandler(
+            OnProcessExit(
+                target_action=spawn_3d_model,
+                on_exit=[
+                    LogInfo(msg='Vehicle spawned in gazebo'),
+                    px4_sitl_process
+                ]
+            )
+        ),
+        
+        # Launch the pegasus_bringup file that is used to spawn the pegasus control and navigation code stack
+        # After the PX4 simulator had already started - Give a 5 second slack to make sure that the PX4 is "already turned on"
+        # TODO - remove this timer - this is a temporary fix while a loop is not added in the mavlink driver
+        RegisterEventHandler(
+            OnProcessStart(
+                target_action=px4_sitl_process,
+                on_start=[
+                    LogInfo(msg='PX4 Simulation Started! Launching the Pegasus code'),
+                    TimerAction(
+                        period=5.0,
+                        actions=[pegasus_launch],
+                    )
+                ]
+            )
+        )
+])
