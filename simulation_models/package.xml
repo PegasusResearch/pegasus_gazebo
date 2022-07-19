@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package>
+  <name>simulation_models</name>
+  <version>1.0.0</version>
+  <description>Package that contains all gazebo worlds and vehicle models</description>
+
+  <maintainer email="marcelo.jacinto@tecnico.ulisboa.pt">Marcelo Jacinto</maintainer>
+  <license>BSD 3-Clause License</license>
+ 
+  <author email="lorenz@px4.io">Lorenz Meier</author>
+  <author email="james.goppert@gmail.com">James Goppert</author>
+  <author email="marcelo.jacinto@tecnico.ulisboa.pt">Marcelo Jacinto</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Packages Dependencies -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_cmake_copyright</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <!-- Export the Gazebo models -->
+  <export>
+    <build_type>ament_cmake</build_type>
+    <gazebo_ros plugin_path="${prefix}/lib" gazebo_media_path="${prefix}" gazebo_model_path="${prefix}/models"/>
+  </export>
+
+</package>

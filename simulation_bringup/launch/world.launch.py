@@ -15,7 +15,7 @@ def generate_launch_description():
     
     # Get the gazebo package directory
     gazebo_launch_dir = os.path.join(get_package_share_directory('gazebo_ros'), 'launch')
-    world = os.path.join(PX4_DIR, 'Tools', 'sitl_gazebo', 'worlds', 'empty.world')
+    world = os.path.join(get_package_share_directory('simulation_models'), 'worlds', 'empty.world')
 
     return LaunchDescription([
         

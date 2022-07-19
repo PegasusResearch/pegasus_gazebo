@@ -13,6 +13,9 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     """Launch Gazebo with a drone running PX4 communicating over ROS 2."""
     
+    # Define the model to launch
+    vehicle_model = 'pegasus_iris'
+    
     # --------------------------------
     # PX4 and Gazebo model directories
     # --------------------------------
@@ -24,9 +27,10 @@ def generate_launch_description():
 
     # Get the PX4-gazebo directory
     px4_gazebo_dir = os.path.join(PX4_DIR, 'Tools/sitl_gazebo')
+    pegasus_models_dir = get_package_share_directory('simulation_models')
     
     # Get the standard iris drone models inside the PX4 package
-    model = os.path.join(px4_gazebo_dir, 'models', 'iris', 'iris.sdf')
+    model = os.path.join(pegasus_models_dir, 'models', vehicle_model, vehicle_model + '.sdf')
     
     # --------------------------------
     # Define the vehicle ID
@@ -48,7 +52,7 @@ def generate_launch_description():
     model_generator_process = ExecuteProcess(
         cmd=[
             os.path.join(px4_gazebo_dir, 'scripts/jinja_gen.py'),
-            os.path.join(px4_gazebo_dir, 'models/iris/iris.sdf.jinja'),
+            os.path.join(px4_gazebo_dir, 'models/' + vehicle_model + '/' + vehicle_model + '.sdf.jinja'),
             px4_gazebo_dir,
             '--mavlink_id=' + str(vehicle_id),
             '--mavlink_udp_port=' + str(14540 + port_increment),
@@ -56,7 +60,7 @@ def generate_launch_description():
             '--gst_udp_port=' + str(5600 + port_increment),
             '--video_uri=' + str(5600 + port_increment),
             '--mavlink_cam_udp_port=' + str(14530 + port_increment),
-            '--output-file=' + os.path.join(px4_gazebo_dir, 'models/iris/iris.sdf'),
+            '--output-file=' + os.path.join(px4_gazebo_dir, 'models/'+ vehicle_model + '/' + vehicle_model + '.sdf'),
         ],
         output='screen',
     )
