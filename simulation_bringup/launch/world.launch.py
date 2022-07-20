@@ -21,7 +21,8 @@ def generate_launch_description():
         
         # Add the PX4 gazebo assets to the gazebo plugin and model paths
         SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo'),
-        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models'),
+        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models' + 
+                               ':' + get_package_share_directory('simulation_models') + '/models'),
 
         # Add the launch arguments to select the simulation world and whether to launch the gazebo gui
         DeclareLaunchArgument('gui', default_value='true'),

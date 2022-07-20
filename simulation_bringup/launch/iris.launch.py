@@ -110,7 +110,7 @@ def generate_launch_description():
         
         # Define the environment variables so that gazebo can discover PX4 3D models and plugins
         SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo'),
-        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models'),
+        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models' + ':' + get_package_share_directory('simulation_models') + '/models'),
         SetEnvironmentVariable('PX4_SIM_MODEL', 'iris'),
 
         # Define where to spawn the vehicle (in the inertial frame) 
