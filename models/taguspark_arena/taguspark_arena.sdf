@@ -1,0 +1,32 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='taguspark_arena'>
+    <static>true</static>
+    <link name="taguspark_arena_link">
+
+      <!-- Generate the collision models based on the DAE file walls of the arena -->
+      <collision name="taguspark_arena_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://taguspark_arena/meshes/Taguspark.dae</uri>
+              <scale>1.0 1.0 1.0</scale>
+            </mesh>
+          </geometry>
+        </collision>
+      
+      <!-- Generate the visual gazebo meshes for the arena based also on the DAE file -->
+      <visual name="seabed">
+        <!-- Do not use shadows -->
+        <cast_shadows>false</cast_shadows>
+        <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://taguspark_arena/meshes/Taguspark.dae</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
