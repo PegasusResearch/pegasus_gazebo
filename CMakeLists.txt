@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10.2)
-project(simulation_models)
+project(pegasus_gazebo)
 
 # Add -Wno-dev to CLion CMake options to suppress warning about gazebo_dev
 find_package(ament_cmake_auto REQUIRED)
@@ -11,7 +11,14 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+# Install Python scripts
+install(PROGRAMS
+  scripts/jinja_gen.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 # Specify where to install the launch files
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY models DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY worlds DESTINATION share/${PROJECT_NAME})
 

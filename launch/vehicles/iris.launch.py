@@ -27,7 +27,7 @@ def generate_launch_description():
 
     # Get the PX4-gazebo directory
     px4_gazebo_dir = os.path.join(PX4_DIR, 'Tools/sitl_gazebo')
-    pegasus_models_dir = get_package_share_directory('simulation_models')
+    pegasus_models_dir = get_package_share_directory('pegasus_gazebo')
     
     # Get the standard iris drone models inside the PX4 package
     model = os.path.join(pegasus_models_dir, 'models', vehicle_model, vehicle_model + '.sdf')
@@ -52,15 +52,15 @@ def generate_launch_description():
     model_generator_process = ExecuteProcess(
         cmd=[
             os.path.join(px4_gazebo_dir, 'scripts/jinja_gen.py'),
-            os.path.join(px4_gazebo_dir, 'models/' + vehicle_model + '/' + vehicle_model + '.sdf.jinja'),
-            px4_gazebo_dir,
+            os.path.join(pegasus_models_dir, 'models/' + vehicle_model + '/' + vehicle_model + '.sdf.jinja'),
+            pegasus_models_dir,
             '--mavlink_id=' + str(vehicle_id),
             '--mavlink_udp_port=' + str(14540 + port_increment),
             '--mavlink_tcp_port=' + str(4560 + port_increment),
             '--gst_udp_port=' + str(5600 + port_increment),
             '--video_uri=' + str(5600 + port_increment),
             '--mavlink_cam_udp_port=' + str(14530 + port_increment),
-            '--output-file=' + os.path.join(px4_gazebo_dir, 'models/'+ vehicle_model + '/' + vehicle_model + '.sdf'),
+            '--output-file=' + os.path.join(pegasus_models_dir, 'models/'+ vehicle_model + '/' + vehicle_model + '.sdf'),
         ],
         output='screen',
     )
@@ -110,7 +110,7 @@ def generate_launch_description():
         
         # Define the environment variables so that gazebo can discover PX4 3D models and plugins
         SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo'),
-        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models' + ':' + get_package_share_directory('simulation_models') + '/models'),
+        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models' + ':' + get_package_share_directory('pegasus_gazebo') + '/models'),
         SetEnvironmentVariable('PX4_SIM_MODEL', 'iris'),
 
         # Define where to spawn the vehicle (in the inertial frame) 

@@ -15,14 +15,14 @@ def generate_launch_description():
     
     # Get the gazebo package directory
     gazebo_launch_dir = os.path.join(get_package_share_directory('gazebo_ros'), 'launch')
-    world = os.path.join(get_package_share_directory('simulation_models'), 'worlds', 'empty.world')
+    world = os.path.join(get_package_share_directory('pegasus_gazebo'), 'worlds', 'empty.world')
 
     return LaunchDescription([
         
         # Add the PX4 gazebo assets to the gazebo plugin and model paths
         SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo'),
         SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models' + 
-                               ':' + get_package_share_directory('simulation_models') + '/models'),
+                               ':' + get_package_share_directory('pegasus_gazebo') + '/models'),
 
         # Add the launch arguments to select the simulation world and whether to launch the gazebo gui
         DeclareLaunchArgument('gui', default_value='true'),
