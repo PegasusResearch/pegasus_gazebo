@@ -175,8 +175,6 @@ def generate_launch_description():
         ),
         
         # Launch the pegasus_bringup file that is used to spawn the pegasus control and navigation code stack
-        # After the PX4 simulator had already started - Give a 5 second slack to make sure that the PX4 is "already turned on"
-        # TODO - remove this timer - this is a temporary fix while a loop is not added in the mavlink driver
         RegisterEventHandler(
             OnProcessExit(
                 target_action=spawn_3d_model,
