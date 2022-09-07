@@ -153,14 +153,11 @@ def generate_launch_description():
         # After the PX4 simulator had already started - Give a 5 second slack to make sure that the PX4 is "already turned on"
         # TODO - remove this timer - this is a temporary fix while a loop is not added in the mavlink driver
         RegisterEventHandler(
-            OnProcessStart(
-                target_action=px4_sitl_process,
-                on_start=[
-                    LogInfo(msg='PX4 Simulation Started! Launching the Pegasus code'),
-                    TimerAction(
-                        period=5.0,
-                        actions=[pegasus_launch],
-                    )
+            OnProcessExit(
+                target_action=spawn_3d_model,
+                on_exit=[
+                    LogInfo(msg='Launching the Pegasus code stack!'),
+                    pegasus_launch
                 ]
             )
         )
