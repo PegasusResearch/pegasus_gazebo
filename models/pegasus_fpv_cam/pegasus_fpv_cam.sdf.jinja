@@ -7,11 +7,11 @@
           <mass>0.015</mass>
           <inertia>
             <ixx>4.15e-6</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>2.407e-6</iyy>
-          <iyz>0</iyz>
-          <izz>2.407e-6</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>2.407e-6</iyy>
+            <iyz>0</iyz>
+            <izz>2.407e-6</izz>
           </inertia>
         </inertial>
         <collision name='collision'>
@@ -68,8 +68,8 @@
           <plugin name='camera_plugin' filename='libgazebo_ros_camera.so'>
             <robotNamespace>{{ robot_namespace }}</robotNamespace>
             <alwaysOn>true</alwaysOn>
-            <imageTopicName>image_raw</imageTopicName>
-            <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+            <imageTopicName>{{ robot_namespace }}/image_raw</imageTopicName>
+            <cameraInfoTopicName>{{ robot_namespace }}/camera_info</cameraInfoTopicName>
             <updateRate>30.0</updateRate>
             <cameraName>usb_cam</cameraName>
             <frameName>/robot_camera_link</frameName>

@@ -48,7 +48,7 @@ def generate_launch_description():
     # Create the Processes that need to be launched to simulate the vehicle
     # ---------------------------------------------------------------------
     
-    # Note, we first need to generate the camera, in order to specify the robot namespace for that component of the robot
+    # Note, we first need to generate the camera sdf with the correct parameters, in order to specify the robot namespace for that component of the robot
     fpv_camera_generator_proccess = ExecuteProcess(
         cmd=[
             os.path.join(get_package_prefix('pegasus_gazebo'), 'lib/pegasus_gazebo/jinja_gen.py'),
@@ -139,7 +139,6 @@ def generate_launch_description():
         
         # Declare the camera generator and the drone generate_model_process
         fpv_camera_generator_proccess,
-        #model_generator_process,
         
         # After the sdf model generator finishes, then launch the vehicle spawn in gazebo
         RegisterEventHandler(

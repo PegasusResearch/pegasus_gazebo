@@ -14,6 +14,10 @@
           <izz>0.068333333</izz>
         </inertia>
       </inertial>
+      <self_collide>0</self_collide>
+      <enable_wind>0</enable_wind>
+      <kinematic>0</kinematic>
+      <pose>0 0 0 0 -0 0</pose>
       <collision name="collision">
         <geometry>
           <box>
@@ -45,7 +49,14 @@
             <scale>1.25931896 1.007455168 0.755591376</scale>
           </mesh>
         </geometry>
+        <material>
+          <shader type='pixel'/>
+        </material>
+        <transparency>0</transparency>
+        <cast_shadows>1</cast_shadows>
       </visual>
     </link>
+    <static>1</static>
+    <allow_auto_disable>1</allow_auto_disable>
   </model>
 </sdf>
