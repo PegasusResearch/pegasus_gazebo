@@ -11,16 +11,9 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-# Install Python scripts
-install(PROGRAMS
-  scripts/jinja_gen.py
-  DESTINATION lib/${PROJECT_NAME}
-)
-
 # Specify where to install the launch files
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY models DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY worlds DESTINATION share/${PROJECT_NAME})
-install(DIRECTORY scripts DESTINATION share/${PROJECT_NAME})
 
 ament_auto_package()

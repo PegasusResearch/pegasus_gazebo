@@ -7,11 +7,11 @@
           <mass>0.015</mass>
           <inertia>
             <ixx>4.15e-6</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>2.407e-6</iyy>
-            <iyz>0</iyz>
-            <izz>2.407e-6</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>2.407e-6</iyy>
+          <iyz>0</iyz>
+          <izz>2.407e-6</izz>
           </inertia>
         </inertial>
         <collision name='collision'>
@@ -66,10 +66,10 @@
           <update_rate>30</update_rate>
           <visualize>1</visualize>
           <plugin name='camera_plugin' filename='libgazebo_ros_camera.so'>
-            <robotNamespace>{{ robot_namespace }}</robotNamespace>
+              <robotNamespace></robotNamespace>
             <alwaysOn>true</alwaysOn>
-            <imageTopicName>{{ robot_namespace }}/image_raw</imageTopicName>
-            <cameraInfoTopicName>{{ robot_namespace }}/camera_info</cameraInfoTopicName>
+            <imageTopicName>image_raw</imageTopicName>
+            <cameraInfoTopicName>camera_info</cameraInfoTopicName>
             <updateRate>30.0</updateRate>
             <cameraName>usb_cam</cameraName>
             <frameName>/robot_camera_link</frameName>
@@ -84,12 +84,6 @@
             <distortionT1>0.0</distortionT1>
             <distortionT2>0.0</distortionT2>
           </plugin>
-          <!-- GStreamer camera plugin (needs a lot of CPU! Consider lowering the
-             camera image size) -->
-          <!--<plugin name="GstCameraPlugin" filename="libgazebo_gst_camera_plugin.so">
-            <robotNamespace></robotNamespace>
-            <udpPort>5600</udpPort>
-          </plugin>-->
         </sensor>
         <self_collide>0</self_collide>
         <kinematic>0</kinematic>
