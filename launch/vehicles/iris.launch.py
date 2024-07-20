@@ -2,10 +2,10 @@
 import os
 import sys
 from launch import LaunchDescription
+from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable, RegisterEventHandler, LogInfo, IncludeLaunchDescription, TimerAction
-from launch.event_handlers import OnProcessExit, OnProcessStart
-from launch.substitutions import LocalSubstitution
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable, RegisterEventHandler, LogInfo, IncludeLaunchDescription
+from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
@@ -25,8 +25,13 @@ def generate_launch_description():
     PX4_RUN_DIR = os.environ.get('HOME') + '/tmp/px4_run_dir'
     os.makedirs(PX4_RUN_DIR, exist_ok=True)
 
+    # Get the environment variables
+    environment = os.environ
+    environment["PX4_SIM_MODEL"] = 'gazebo-classic_iris'
+    environment["ROS_VERSION"] = '2'
+
     # Get the PX4-gazebo directory
-    px4_gazebo_dir = os.path.join(PX4_DIR, 'Tools/sitl_gazebo')
+    px4_gazebo_dir = os.path.join(PX4_DIR, 'Tools/simulation/gazebo-classic/sitl_gazebo-classic')
     pegasus_models_dir = get_package_share_directory('pegasus_gazebo')
     
     # Get the standard iris drone models inside the PX4 package
@@ -47,7 +52,7 @@ def generate_launch_description():
     # ---------------------------------------------------------------------
     # Create the Processes that need to be launched to simulate the vehicle
     # ---------------------------------------------------------------------
-    
+
     # Generate the 3D model by replacing in the mavlink configuration parameters, according to the vehicle ID
     model_generator_process = ExecuteProcess(
         cmd=[
@@ -61,24 +66,27 @@ def generate_launch_description():
             '--video_uri=' + str(5600 + port_increment),
             '--mavlink_cam_udp_port=' + str(14530 + port_increment),
             '--output-file=' + os.path.join(pegasus_models_dir, 'models/'+ vehicle_model + '/' + vehicle_model + '.sdf'),
+            '--generate_ros_models=True'
         ],
+        env=environment,
         output='screen',
     )
     
     # Spawn the 3D model in the gazebo world (it requires that a gzserver is already running)
-    spawn_3d_model = ExecuteProcess(
-        cmd=[
-            'gz', 'model',
-            '--spawn-file', model,
-            '--model-name', 'drone' + str(vehicle_id),
-            '-x', LaunchConfiguration('x'),
-            '-y', LaunchConfiguration('y'),
-            '-z', LaunchConfiguration('z'),
-            '-R', LaunchConfiguration('R'),
-            '-P', LaunchConfiguration('P'),
-            '-Y', LaunchConfiguration('Y')
-        ],
-        output='screen')
+    spawn_3d_model = Node(
+        package='gazebo_ros', 
+        executable='spawn_entity.py',
+        arguments=['-entity', 'drone' + str(vehicle_id), 
+               '-file', model,
+               '-x', LaunchConfiguration('x'),
+               '-y', LaunchConfiguration('y'),
+               '-z', LaunchConfiguration('z'),
+               '-R', LaunchConfiguration('R'),
+               '-P', LaunchConfiguration('P'),
+               '-Y', LaunchConfiguration('Y'),
+               '-robot_namespace', 'drone'],
+        output='screen'
+    )
             
     # Launch PX4 simulator
     px4_sitl_process = ExecuteProcess(
@@ -91,7 +99,9 @@ def generate_launch_description():
         ],
         prefix='bash -c "$0 $@"',
         cwd=PX4_RUN_DIR,
-        output='screen'
+        output='screen',
+        env=environment,
+        shell=False
     )
     
     # Launch the pegasus control and navigation code stack
@@ -137,7 +147,7 @@ def generate_launch_description():
                 ]
             )
         ),
-        
+
         # After the sdf model of the vehicle get's spawn on the vehicle, execute the PX4 simulator
         RegisterEventHandler(
             OnProcessExit(

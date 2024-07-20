@@ -20,9 +20,8 @@ def generate_launch_description():
     return LaunchDescription([
         
         # Add the PX4 gazebo assets to the gazebo plugin and model paths
-        SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo'),
-        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models' + 
-                               ':' + get_package_share_directory('pegasus_gazebo') + '/models'),
+        SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo-classic'),
+        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models' + ':' + get_package_share_directory('pegasus_gazebo') + '/models'),
 
         # Add the launch arguments to select the simulation world and whether to launch the gazebo gui
         DeclareLaunchArgument('gui', default_value='true'),
@@ -31,8 +30,7 @@ def generate_launch_description():
         # Launch the gazebo server with a specific world
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([gazebo_launch_dir, '/gzserver.launch.py']),
-            launch_arguments={'world': LaunchConfiguration('world'),
-                              'verbose': 'true'}.items()),
+            launch_arguments={'world': LaunchConfiguration('world'), 'verbose': 'true'}.items()),
         
         # Launch the gazebo window to view the simulation, if 'gui' option is set to True
         IncludeLaunchDescription(

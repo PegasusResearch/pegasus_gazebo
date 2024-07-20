@@ -26,7 +26,7 @@ def generate_launch_description():
     os.makedirs(PX4_RUN_DIR, exist_ok=True)
 
     # Get the PX4-gazebo directory
-    px4_gazebo_dir = os.path.join(PX4_DIR, 'Tools/sitl_gazebo')
+    px4_gazebo_dir = os.path.join(PX4_DIR, 'Tools/simulation/gazebo-classic/sitl_gazebo-classic')
     pegasus_models_dir = get_package_share_directory('pegasus_gazebo')
     
     # Get the standard iris drone models inside the PX4 package
