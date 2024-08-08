@@ -42,42 +42,36 @@
           <camera name='__default__'>
             <horizontal_fov>1.047</horizontal_fov>
             <image>
-              <width>320</width>
-              <height>240</height>
+              <width>1280</width>
+              <height>720</height>
+              <format>RGB_INT8</format>
             </image>
             <clip>
               <near>0.1</near>
               <far>100</far>
             </clip>
-            <lens>
-              <type>custom</type>
-              <custom_function>
-                <c1>1.05</c1>
-                <c2>4</c2>
-                <f>1</f>
-                <fun>tan</fun>
-              </custom_function>
-              <scale_to_hfov>1</scale_to_hfov>
-              <cutoff_angle>3.1415</cutoff_angle>
-              <env_texture_size>1080</env_texture_size>
-            </lens>
+            <noise>
+              <type>gaussian</type>
+              <mean>0.0</mean>
+              <stddev>0.007</stddev>
+            </noise>
           </camera>
           <always_on>1</always_on>
-          <update_rate>30</update_rate>
+          <update_rate>60</update_rate>
           <visualize>1</visualize>
           <plugin name='camera_plugin' filename='libgazebo_ros_camera.so'>
-              <robotNamespace></robotNamespace>
+            <robotNamespace></robotNamespace>
             <alwaysOn>true</alwaysOn>
-            <imageTopicName>image_raw</imageTopicName>
-            <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+            <imageTopicName>color/image_raw</imageTopicName>
+            <cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
             <updateRate>30.0</updateRate>
             <cameraName>usb_cam</cameraName>
             <frameName>/robot_camera_link</frameName>
-            <CxPrime>320.5</CxPrime>
-            <Cx>320.5</Cx>
-            <Cy>240.5</Cy>
+            <CxPrime>640.0</CxPrime>
+            <Cx>640.0</Cx>
+            <Cy>360.0</Cy>
             <hackBaseline>0</hackBaseline>
-            <focalLength>277.191356</focalLength>
+            <focalLength>193.0</focalLength>
             <distortionK1>0.0</distortionK1>
             <distortionK2>0.0</distortionK2>
             <distortionK3>0.0</distortionK3>

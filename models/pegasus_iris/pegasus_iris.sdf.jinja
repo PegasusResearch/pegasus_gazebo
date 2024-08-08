@@ -444,6 +444,18 @@
       <baroTopic>/baro</baroTopic>
       <baroDriftPaPerSec>0</baroDriftPaPerSec>
     </plugin>
+    <plugin name="pose_publisher_plugin" filename="libgazebo_ros_p3d.so">
+      <ros>
+        <remapping>odom:=simulator/state</remapping>
+      </ros>
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <body_name>base_link</body_name>
+      <frame_name>world</frame_name>
+      <gaussian_noise>0.00</gaussian_noise>
+      <xyz_offset>0 0 0</xyz_offset>
+      <rpy_offset>0 0 0</rpy_offset>
+    </plugin>
     <plugin name='mavlink_interface' filename='libgazebo_mavlink_interface.so'>
       <robotNamespace/>
       <imuSubTopic>/imu</imuSubTopic>
