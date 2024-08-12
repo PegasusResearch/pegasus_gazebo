@@ -1,59 +1,42 @@
 #!/usr/bin/env python3
 import os
-import sys
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable, RegisterEventHandler, LogInfo, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable, RegisterEventHandler, LogInfo, IncludeLaunchDescription, OpaqueFunction
 from launch.event_handlers import OnProcessExit
 from launch.conditions import LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
+# Get the home and px4 directories and define where temporary files are placed
+PX4_DIR = os.environ.get('PX4_DIR')
+PX4_RUN_DIR = os.environ.get('HOME') + '/tmp/px4_run_dir'
+os.makedirs(PX4_RUN_DIR, exist_ok=True)
 
-def generate_launch_description():
-    """Launch Gazebo with a drone running PX4 communicating over ROS 2."""
-    
+def launch_vehicle(context, *args, **kwargs):
+
     # Define the model to launch
     vehicle_model = 'pegasus_iris_fpv'
-    
-    # --------------------------------
-    # PX4 and Gazebo model directories
-    # --------------------------------
-    
-    # Get the home and px4 directories and define where temporary files are placed
-    PX4_DIR = os.environ.get('PX4_DIR')
-    PX4_RUN_DIR = os.environ.get('HOME') + '/tmp/px4_run_dir'
-    os.makedirs(PX4_RUN_DIR, exist_ok=True)
+
+    vehicle_id = int(LaunchConfiguration('vehicle_id').perform(context))
+    port_increment = vehicle_id - 1
 
     # Get the environment variables
     environment = os.environ
     environment["PX4_SIM_MODEL"] = 'gazebo-classic_iris'
     environment["ROS_VERSION"] = '2'
-
+    
+    # --------------------------------
+    # PX4 and Gazebo model directories
+    # --------------------------------
     # Get the PX4-gazebo directory
     px4_gazebo_dir = os.path.join(PX4_DIR, 'Tools/simulation/gazebo-classic/sitl_gazebo-classic')
     pegasus_models_dir = get_package_share_directory('pegasus_gazebo')
-    
+
     # Get the standard iris drone models inside the PX4 package
     model = os.path.join(pegasus_models_dir, 'models', vehicle_model, vehicle_model + '.sdf')
     
-    # --------------------------------
-    # Define the vehicle ID
-    # --------------------------------
-    
-    # Set the default vehicle id (note: this is a trick due to the parameter reading limitation in ROS2)
-    default_vehicle_id = 1
-    vehicle_id = default_vehicle_id
-    for arg in sys.argv:
-        if arg.startswith('vehicle_id:='):
-            vehicle_id = int(arg.split(':=')[1])
-    port_increment = vehicle_id - 1
-            
-    # ---------------------------------------------------------------------
-    # Create the Processes that need to be launched to simulate the vehicle
-    # ---------------------------------------------------------------------
-
     # First generate the original SDF model of the standard iris drone, which will later be referenced by the fpv model
     model_generator_process = ExecuteProcess(
         cmd=[
@@ -118,29 +101,7 @@ def generate_launch_description():
         condition=LaunchConfigurationEquals('launch_pegasus', 'true')
     )
 
-    return LaunchDescription([
-        
-        # Define the environment variables so that gazebo can discover PX4 3D models and plugins
-        SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo'),
-        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models' + ':' + get_package_share_directory('pegasus_gazebo') + '/models'),
-        SetEnvironmentVariable('PX4_SIM_MODEL', 'iris'),
-
-        # Define where to spawn the vehicle (in the inertial frame) 
-        # TODO - receive coordinates in ned perform the conversion to ENU and f.l.u here
-        # so that the user only needs to work in NED coordinates
-        DeclareLaunchArgument('vehicle_id', default_value=str(default_vehicle_id), description='Drone ID in the network'),
-        DeclareLaunchArgument('x', default_value='0.0', description='X position expressed in ENU'),
-        DeclareLaunchArgument('y', default_value='0.0', description='Y position expressed in ENU'),
-        DeclareLaunchArgument('z', default_value='0.0', description='Z position expressed in ENU'),
-        DeclareLaunchArgument('R', default_value='0.0', description='Roll orientation expressed in ENU'),
-        DeclareLaunchArgument('P', default_value='0.0', description='Pitch orientation expressed in ENU'),
-        DeclareLaunchArgument('Y', default_value='0.0', description='Yaw orientation expressed in ENU'),
-
-        # Default to launch the pegasus control stack with the default configurations for the iris vehicle
-        DeclareLaunchArgument('launch_pegasus', default_value='true'),
-        
-        # Declare the generate_model_process
-        model_generator_process,
+    return [model_generator_process,
         
         # After the sdf model generator finishes, then launch the vehicle spawn in gazebo
         RegisterEventHandler(
@@ -173,5 +134,35 @@ def generate_launch_description():
                     pegasus_launch
                 ]
             )
-        )
+        )]
+
+
+def generate_launch_description():
+    """Launch Gazebo with a drone running PX4 communicating over ROS 2."""
+            
+    # ---------------------------------------------------------------------
+    # Create the Processes that need to be launched to simulate the vehicle
+    # ---------------------------------------------------------------------
+
+    return LaunchDescription([
+        
+        # Define the environment variables so that gazebo can discover PX4 3D models and plugins
+        SetEnvironmentVariable('GAZEBO_PLUGIN_PATH', PX4_DIR + '/build/px4_sitl_default/build_gazebo'),
+        SetEnvironmentVariable('GAZEBO_MODEL_PATH', PX4_DIR + '/Tools/sitl_gazebo/models' + ':' + get_package_share_directory('pegasus_gazebo') + '/models'),
+        SetEnvironmentVariable('PX4_SIM_MODEL', 'iris'),
+
+        # Define where to spawn the vehicle (in the inertial frame) 
+        # TODO - receive coordinates in ned perform the conversion to ENU and f.l.u here
+        # so that the user only needs to work in NED coordinates
+        DeclareLaunchArgument('vehicle_id', default_value='1', description='Drone ID in the network'),
+        DeclareLaunchArgument('x', default_value='0.0', description='X position expressed in ENU'),
+        DeclareLaunchArgument('y', default_value='0.0', description='Y position expressed in ENU'),
+        DeclareLaunchArgument('z', default_value='0.0', description='Z position expressed in ENU'),
+        DeclareLaunchArgument('R', default_value='0.0', description='Roll orientation expressed in ENU'),
+        DeclareLaunchArgument('P', default_value='0.0', description='Pitch orientation expressed in ENU'),
+        DeclareLaunchArgument('Y', default_value='0.0', description='Yaw orientation expressed in ENU'),
+
+        # Default to launch the pegasus control stack with the default configurations for the iris vehicle
+        DeclareLaunchArgument('launch_pegasus', default_value='true'),
+        OpaqueFunction(function=launch_vehicle)
 ])
