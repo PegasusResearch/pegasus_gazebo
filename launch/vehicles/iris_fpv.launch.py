@@ -6,6 +6,7 @@ from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable, RegisterEventHandler, LogInfo, IncludeLaunchDescription, OpaqueFunction
 from launch.event_handlers import OnProcessExit
 from launch.conditions import LaunchConfigurationEquals
+from launch.conditions import LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
@@ -49,7 +50,7 @@ def launch_vehicle(context, *args, **kwargs):
             '--gst_udp_port=' + str(5600 + port_increment),
             '--video_uri=' + str(5600 + port_increment),
             '--mavlink_cam_udp_port=' + str(14530 + port_increment),
-            '--output-file=' + os.path.join(pegasus_models_dir, 'models/'+ 'pegasus_iris' + '/' + 'pegasus_iris' + '.sdf'),
+            '--output-file=' + os.path.join(pegasus_models_dir, 'models/'+ 'pegasus_iris' + '/' + 'pegasus_iris' +  str(vehicle_id) + '.sdf'),
             '--generate_ros_models=True'
         ],
         env=environment,
@@ -61,13 +62,13 @@ def launch_vehicle(context, *args, **kwargs):
         package='gazebo_ros', 
         executable='spawn_entity.py',
         arguments=['-entity', 'drone' + str(vehicle_id), 
-               '-file', model,
-               '-x', LaunchConfiguration('x'),
-               '-y', LaunchConfiguration('y'),
-               '-z', LaunchConfiguration('z'),
-               '-R', LaunchConfiguration('R'),
-               '-P', LaunchConfiguration('P'),
-               '-Y', LaunchConfiguration('Y'),
+               '-file', os.path.join(pegasus_models_dir, 'models/'+ 'pegasus_iris' + '/' + 'pegasus_iris' +  str(vehicle_id) + '.sdf'),
+               '-x', LaunchConfiguration('x').perform(context),
+               '-y', LaunchConfiguration('y').perform(context),
+               '-z', LaunchConfiguration('z').perform(context),
+               '-R', LaunchConfiguration('R').perform(context),
+               '-P', LaunchConfiguration('P').perform(context),
+               '-Y', LaunchConfiguration('Y').perform(context),
                '-robot_namespace', 'drone' + str(vehicle_id)],
         output='screen'
     )
@@ -98,6 +99,7 @@ def launch_vehicle(context, *args, **kwargs):
             'namespace': 'drone',
             'connection': 'udp://:' + str(14540 + port_increment)
         }.items(),
+        condition=LaunchConfigurationEquals('launch_pegasus', 'true'),
         condition=LaunchConfigurationEquals('launch_pegasus', 'true')
     )
 
