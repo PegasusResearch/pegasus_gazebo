@@ -6,6 +6,7 @@ from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable, RegisterEventHandler, LogInfo, IncludeLaunchDescription
 from launch.event_handlers import OnProcessExit
+from launch.conditions import LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
@@ -113,7 +114,8 @@ def generate_launch_description():
             'id': str(vehicle_id), 
             'namespace': 'drone',
             'connection': 'udp://:' + str(14540 + port_increment)
-        }.items()
+        }.items(),
+        condition=LaunchConfigurationEquals('launch_pegasus', 'true')
     )
 
     return LaunchDescription([
@@ -133,6 +135,9 @@ def generate_launch_description():
         DeclareLaunchArgument('R', default_value='0.0', description='Roll orientation expressed in ENU'),
         DeclareLaunchArgument('P', default_value='0.0', description='Pitch orientation expressed in ENU'),
         DeclareLaunchArgument('Y', default_value='0.0', description='Yaw orientation expressed in ENU'),
+
+        # Default to launch the pegasus control stack with the default configurations for the iris vehicle
+        DeclareLaunchArgument('launch_pegasus', default_value='true'),
         
         # Declare the generate_model_process
         model_generator_process,
